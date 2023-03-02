@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="">
+  <head>
+    <meta charset="utf-8">
+    <title></title>
+    <style>
+label {
+  font-size: 20px;
+  font-family: Arial;
+  font-weight: bold;
+  color: white;
+}
+h1 {
+color: white;
+}
+button, input {
+  width: 90%;
+  height: 50px;
+  font-size: 20px;
+  font-family: Fixed;
+  margin-left: auto;
+  margin-right: auto;
+}
+body {
+  background-color: #234276;
+}
+button {
+  font-family: Arial;
+}
+#dbg {
+  font-size: 10px;
+}
+    </style>
+    <script >
+    var busy=false;
+    function sendToAndroid() {
+      var msg=document.getElementById('tx').value;
+      dbg("sending: "+msg);
+      window.AppInventor.fachtnaSetWebViewString(msg);
+    }
+    function readFromAndroid(){
+      dbg('BBB');
+      document.getElementById('rx').value="get";
+      var msg =window.AppInventor.getWebViewString();
+      document.getElementById('rx').value=msg;
+    }
+    function dbg(str) {
+      document.getElementById('dbg').value=str;
+    }
+    document.addEventListener('fachtnaWebViewStringChange', readFromAndroid);
+    document.addEventListener('webViewStringChange', readFromAndroid);
+    /*    window.onfachtnaWebViewStringChange=function() {
+      dbg('AAAAA');
+      readFromAndroid();
+    }
+    */
+    /* using a ticker/timer to poll the shared memory known as "WebViewString". Or Bob.
+        Bob to his friends. It wouldn't do to be all formal Mr WebViewString, when Bob will suffice.
+    */
+    setInterval(
+      function() {
+          if (!busy) {
+            busy=true;
+            readFromAndroid();
+            busy=false;
+          }
+        }
+      ,1000);
+    </script>
+  </head>
+  <body>
+    <h1>HTML</h1>
+    <label for="rx">Receive</label><br>
+    <input type="text" name="rx" id="rx"><br><br>
+    <label for="tx">Send</label><br>
+    <input type="text" name="tx" id="tx" value="testing html"><br><br>
+    <button type="button" id="send" name="send" onclick="sendToAndroid()">Send</button><br><br>
+    <input type="text" name="dbg" id="dbg" readonly value="---"><br>
+  </body>
+</html>
