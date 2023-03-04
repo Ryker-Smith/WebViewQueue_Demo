@@ -57,11 +57,10 @@ width: 100%;
       document.removeEventListener('wvq', wvq_readFromAndroid);
       var msg =window.AppInventor.getWebViewString();
       document.getElementById('rx').value=msg;
-      wvq_first=true;
+      // wvq_first=true;
       document.addEventListener('wvq', wvq_readFromAndroid);
       watchTimer=setInterval(wvq_watcher,wvq_tickerInterval);
     }
-    
     function dbg(str) {
       document.getElementById('dbg').value=str;
     }

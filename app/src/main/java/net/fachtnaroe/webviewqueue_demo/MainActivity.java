@@ -1,6 +1,7 @@
 package net.fachtnaroe.webviewqueue_demo;
 
 import com.google.appinventor.components.runtime.Button;
+import com.google.appinventor.components.runtime.Clock;
 import com.google.appinventor.components.runtime.Component;
 import com.google.appinventor.components.runtime.EventDispatcher;
 import com.google.appinventor.components.runtime.Form;
@@ -15,12 +16,14 @@ public class MainActivity extends Form implements HandlesEventDispatching {
 
     private
     Button sendButton;
-    Label rxLabel, txLabel, heading, topHeading;
+    Label rxLabel, txLabel, heading, topHeading, qSizeLbl, qNowLbl;
     TextBox rxTextBox, txTextBox, dbgLabel;
     HorizontalArrangement main;
     VerticalArrangement androidDisplay, outer;
     fachtnaWebViewer htmlDisplay;
     WebViewQueue wvq;
+    static boolean debugging_onoff=true;
+    Clock clicketty;
 
     protected void $define() {
         this.Sizing("Responsive");
@@ -57,10 +60,10 @@ public class MainActivity extends Form implements HandlesEventDispatching {
         heading.Text("android");
         heading.TextColor(Component.COLOR_WHITE);
         heading.FontSize(45);
-        Label qSizeLbl=new Label(androidDisplay);
+        qSizeLbl=new Label(androidDisplay);
         qSizeLbl.TextColor(Component.COLOR_WHITE);
         qSizeLbl.FontTypeface(Component.TYPEFACE_MONOSPACE);
-        Label qNowLbl=new Label(androidDisplay);
+        qNowLbl=new Label(androidDisplay);
         qNowLbl.TextColor(Component.COLOR_WHITE);
         qNowLbl.FontTypeface(Component.TYPEFACE_MONOSPACE);
 
@@ -100,33 +103,45 @@ public class MainActivity extends Form implements HandlesEventDispatching {
         wvq=new WebViewQueue(this, htmlDisplay);
         qSizeLbl.Text("Max  Q: "+wvq.queue_max.toString());
         qNowLbl.Text ("Size Q: "+wvq.qSize());
+        clicketty=new Clock(this);
+        clicketty.TimerInterval(1000);
+        clicketty.TimerEnabled(true);
 
+        dbg(" Starting register["+this.toString()+"]");
         EventDispatcher.registerEventForDelegation(this, this.toString(), "Click");
+        EventDispatcher.registerEventForDelegation(this, this.toString(), "Timer");
         EventDispatcher.registerEventForDelegation(this, this.toString(), "fachtnaWebViewStringChange");
     }
 
     public boolean dispatchEvent(Component component, String componentName, String eventName, Object[] params) {
 
-        dbg("dispatchEvent: " + formName + " [" +component.toString() + "] [" + componentName + "] " + eventName);
+        //dbg("dispatchEvent: [" + formName + "] [" +component.toString() + "] [" + componentName + "] " + eventName);
+
         if (eventName.equals("Click")) {
             if (component.equals(sendButton)) {
                 wvq.toGame(txTextBox.Text());
                 dbg("Sending: "+txTextBox.Text() );
-//                dbgLabel.Text(txTextBox.Text());
                 return true;
             }
         }
+        else if(component.equals("Timer")){
+            qNowLbl.Text ("Size Q: "+wvq.qSize());
+        }
         else if( eventName.equals("fachtnaWebViewStringChange") ) {
+            dbg("   component   ["+component.toString()+"]");
             if (component.equals(htmlDisplay)) {
-//                dbg("WebViewStringChange");
-                rxTextBox.Text(wvq.fromGame());
-                return true;
+                String r=wvq.fromGame();
+                rxTextBox.Text(r);
             }
+            return true;
         }
         return false;
     }
 
     public static void dbg (String debugMsg) {
-        System.err.print( "~~~> " + debugMsg + " <~~~\n");
+
+        if (debugging_onoff) {
+            System.err.print( "~~~> " + debugMsg + " <~~~\n");
+        }
     }
 }
