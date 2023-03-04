@@ -30,59 +30,66 @@ button {
 #dbg {
   font-size: 10px;
 }
+#fleg{
+width: 100%;
+  height: 20px;
+  background-color:#234276;
+}
 </style>
 <script >
-    let tickerInterval=500;
-    let lastMessage="";
-    let currentMessage="";
-    let first=true;
-    var busy=false;
+    let wvq_tickerInterval=500;
+    let wvq_lastMessage="";
+    let wvq_currentMessage="";
+    let wvq_first=true;
+    var wvq_busy=false;
     
-    function sendToAndroid() {
+    function wvq_sendToAndroid() {
       clearInterval(watchTimer);
-      document.removeEventListener('webviewqueue_demo', readFromAndroid);
+      document.removeEventListener('wvq', wvq_readFromAndroid);
       var msg=document.getElementById('tx').value;
       window.AppInventor.fachtnaSetWebViewString(msg);
-      document.addEventListener('webviewqueue_demo', readFromAndroid);
-      watchTimer=setInterval(watcher,tickerInterval);
+      document.addEventListener('wvq', wvq_readFromAndroid);
+      watchTimer=setInterval(wvq_watcher,wvq_tickerInterval);
     }
     
-    function readFromAndroid(){
+    function wvq_readFromAndroid(){
       clearInterval(watchTimer);
-      document.removeEventListener('webviewqueue_demo', readFromAndroid);
+      document.removeEventListener('wvq', wvq_readFromAndroid);
       var msg =window.AppInventor.getWebViewString();
       document.getElementById('rx').value=msg;
-      first=true;
-      document.addEventListener('webviewqueue_demo', readFromAndroid);
-      watchTimer=setInterval(watcher,tickerInterval);
+      wvq_first=true;
+      document.addEventListener('wvq', wvq_readFromAndroid);
+      watchTimer=setInterval(wvq_watcher,wvq_tickerInterval);
     }
     
     function dbg(str) {
       document.getElementById('dbg').value=str;
     }
-    function watcher() {
+    function wvq_watcher() {
+      document.getElementById('fleg').style.BackgroundColor="red";
       var now = new Date();
       var ticks = now.getTime();
       dbg(ticks);
-      if (first) {
+      if (wvq_first) {
         window.AppInventor.getWebViewString();
         window.AppInventor.getWebViewString();
-        first=false;
+        wvq_first=false;
       }
-      if (!busy) {
-        busy=true;
+      if (!wvq_busy) {
+        wvq_busy=true;
         temp=window.AppInventor.getWebViewString();
-        if ((currentMessage != temp) ) {
-          lastMessage=currentMessage;
-          currentMessage=temp;
-          inbound=new CustomEvent("webviewqueue_demo");
+        if ((wvq_currentMessage != temp) ) {
+          wvq_lastMessage=wvq_currentMessage;
+          wvq_currentMessage=temp;
+          inbound=new CustomEvent("wvq");
           document.dispatchEvent(inbound);
         }
-        busy=false;
+        wvq_busy=false;
       }
+      // document.getElementById('fleg').style.BackgroundColor="#234276";
     }
-    document.addEventListener('webviewqueue_demo', readFromAndroid);
-    watchTimer=setInterval(watcher,tickerInterval);
+    document.addEventListener('wvq', wvq_readFromAndroid);
+    watchTimer=setInterval(wvq_watcher, wvq_tickerInterval);
 </script>
 </head>
 <body>
@@ -91,7 +98,8 @@ button {
     <input type="text" name="rx" id="rx"><br><br>
     <label for="tx">Send</label><br>
     <input type="text" name="tx" id="tx" value="This is html"><br><br>
-    <button type="button" id="send" name="send" onclick="sendToAndroid()">Send</button><br><br>
+    <button type="button" id="send" name="send" onclick="wvq_sendToAndroid()">Send</button><br><br>
     <input type="text" name="dbg" id="dbg" readonly value="---"><br>
+    <div id="fleg"></div>
 </body>
 </html>

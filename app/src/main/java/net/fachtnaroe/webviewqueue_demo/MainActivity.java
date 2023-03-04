@@ -30,8 +30,11 @@ public class MainActivity extends Form implements HandlesEventDispatching {
         outer.HeightPercent(100);
         topHeading=new Label(outer);
         topHeading.Width(Component.LENGTH_FILL_PARENT);
-        topHeading.Text(getPackageName());
+        topHeading.Text(
+                getPackageName()+" (build "+Integer.toString(BuildConfig.VERSION_CODE)+")"
+        );
         topHeading.TextColor(Component.COLOR_WHITE);
+        topHeading.FontSize(12);
         topHeading.BackgroundColor(Component.COLOR_BLACK);
         topHeading.TextAlignment(ALIGNMENT_CENTER);
 
@@ -54,6 +57,13 @@ public class MainActivity extends Form implements HandlesEventDispatching {
         heading.Text("android");
         heading.TextColor(Component.COLOR_WHITE);
         heading.FontSize(45);
+        Label qSizeLbl=new Label(androidDisplay);
+        qSizeLbl.TextColor(Component.COLOR_WHITE);
+        qSizeLbl.FontTypeface(Component.TYPEFACE_MONOSPACE);
+        Label qNowLbl=new Label(androidDisplay);
+        qNowLbl.TextColor(Component.COLOR_WHITE);
+        qNowLbl.FontTypeface(Component.TYPEFACE_MONOSPACE);
+
         rxLabel = new Label(androidDisplay);
         rxLabel.Width(Component.LENGTH_FILL_PARENT);
         rxLabel.Text("Receive");
@@ -88,8 +98,10 @@ public class MainActivity extends Form implements HandlesEventDispatching {
         dbgLabel.Text("---");
 
         wvq=new WebViewQueue(this, htmlDisplay);
+        qSizeLbl.Text("Max  Q: "+wvq.queue_max.toString());
+        qNowLbl.Text ("Size Q: "+wvq.qSize());
 
-        EventDispatcher.registerEventForDelegation(this, formName, "Click");
+        EventDispatcher.registerEventForDelegation(this, this.toString(), "Click");
         EventDispatcher.registerEventForDelegation(this, this.toString(), "fachtnaWebViewStringChange");
     }
 
@@ -100,13 +112,13 @@ public class MainActivity extends Form implements HandlesEventDispatching {
             if (component.equals(sendButton)) {
                 wvq.toGame(txTextBox.Text());
                 dbg("Sending: "+txTextBox.Text() );
-                dbgLabel.Text(txTextBox.Text());
+//                dbgLabel.Text(txTextBox.Text());
                 return true;
             }
         }
         else if( eventName.equals("fachtnaWebViewStringChange") ) {
             if (component.equals(htmlDisplay)) {
-                dbg("WebViewStringChange");
+//                dbg("WebViewStringChange");
                 rxTextBox.Text(wvq.fromGame());
                 return true;
             }
