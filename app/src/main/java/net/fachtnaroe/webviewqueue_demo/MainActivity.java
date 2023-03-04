@@ -1,8 +1,5 @@
 package net.fachtnaroe.webviewqueue_demo;
 
-import android.content.Intent;
-import android.net.Uri;
-
 import com.google.appinventor.components.runtime.Button;
 import com.google.appinventor.components.runtime.Component;
 import com.google.appinventor.components.runtime.EventDispatcher;
@@ -11,35 +8,47 @@ import com.google.appinventor.components.runtime.HandlesEventDispatching;
 import com.google.appinventor.components.runtime.HorizontalArrangement;
 import com.google.appinventor.components.runtime.Label;
 import com.google.appinventor.components.runtime.TextBox;
+import com.google.appinventor.components.runtime.WebViewer;
 import com.google.appinventor.components.runtime.VerticalArrangement;
 
 public class MainActivity extends Form implements HandlesEventDispatching {
 
     private
     Button sendButton;
-    Label rxLabel, txLabel, heading;
+    Label rxLabel, txLabel, heading, topHeading;
     TextBox rxTextBox, txTextBox, dbgLabel;
     HorizontalArrangement main;
-    VerticalArrangement androidDisplay;
+    VerticalArrangement androidDisplay, outer;
     fachtnaWebViewer htmlDisplay;
+    WebViewQueue wvq;
 
     protected void $define() {
         this.Sizing("Responsive");
         this.BackgroundColor(0xFF167340);
-        main = new HorizontalArrangement(this);
-        main.HeightPercent(100);
+        outer=new VerticalArrangement(this);
+        outer.WidthPercent(100);
+        outer.HeightPercent(100);
+        topHeading=new Label(outer);
+        topHeading.Width(Component.LENGTH_FILL_PARENT);
+        topHeading.Text(getPackageName());
+        topHeading.TextColor(Component.COLOR_WHITE);
+        topHeading.BackgroundColor(Component.COLOR_BLACK);
+        topHeading.TextAlignment(ALIGNMENT_CENTER);
+
+        main = new HorizontalArrangement(outer);
+        main.Height(Component.LENGTH_FILL_PARENT);
         main.WidthPercent(100);
 
         htmlDisplay=new fachtnaWebViewer(main);
         htmlDisplay.WidthPercent(50);
-        htmlDisplay.HeightPercent(100);
-        htmlDisplay.HomeUrl("file:///android_asset/guestpage.html");
+        htmlDisplay.Height(Component.LENGTH_FILL_PARENT);
+        htmlDisplay.HomeUrl("file:///android_asset/webviewqueue_demo.html");
         htmlDisplay.WebViewString("htmlDisplay_started");
         htmlDisplay.GoHome();
 
         androidDisplay = new VerticalArrangement(main);
         androidDisplay.WidthPercent(50);
-        androidDisplay.HeightPercent(100);
+        androidDisplay.Height(Component.LENGTH_FILL_PARENT);
 
         heading = new Label(androidDisplay);
         heading.Text("android");
@@ -64,7 +73,7 @@ public class MainActivity extends Form implements HandlesEventDispatching {
         txLabel.FontBold(true);
         txTextBox=new TextBox(androidDisplay);
         txTextBox.Width(Component.LENGTH_FILL_PARENT);
-        txTextBox.Text("testing android");
+        txTextBox.Text("hello world");
         txTextBox.BackgroundColor(Component.COLOR_WHITE);
         txTextBox.Height(50);
 
@@ -78,10 +87,10 @@ public class MainActivity extends Form implements HandlesEventDispatching {
         dbgLabel.Height(50);
         dbgLabel.Text("---");
 
+        wvq=new WebViewQueue(this, htmlDisplay);
 
         EventDispatcher.registerEventForDelegation(this, formName, "Click");
-        EventDispatcher.registerEventForDelegation(this, formName, "fachtnaWebViewStringChange");
-        //EventDispatcher.registerEventForDelegation(this, formName, "WebViewStringChange");
+        EventDispatcher.registerEventForDelegation(this, this.toString(), "fachtnaWebViewStringChange");
     }
 
     public boolean dispatchEvent(Component component, String componentName, String eventName, Object[] params) {
@@ -89,28 +98,20 @@ public class MainActivity extends Form implements HandlesEventDispatching {
         dbg("dispatchEvent: " + formName + " [" +component.toString() + "] [" + componentName + "] " + eventName);
         if (eventName.equals("Click")) {
             if (component.equals(sendButton)) {
-                sendButton_Clicked();
+                wvq.toGame(txTextBox.Text());
+                dbg("Sending: "+txTextBox.Text() );
+                dbgLabel.Text(txTextBox.Text());
                 return true;
             }
         }
         else if( eventName.equals("fachtnaWebViewStringChange") ) {
             if (component.equals(htmlDisplay)) {
-                htmlDisplay_StringChange(htmlDisplay.WebViewString());
+                dbg("WebViewStringChange");
+                rxTextBox.Text(wvq.fromGame());
                 return true;
             }
         }
         return false;
-    }
-    public void sendButton_Clicked(){
-        htmlDisplay.WebViewString( txTextBox.Text() );
-        htmlDisplay.fachtnaRaiseEvent("WebViewStringChange");
-        htmlDisplay.fachtnaRaiseEvent("fachtnaWebViewStringChange");
-        dbg("Sending: "+txTextBox.Text() );
-        dbgLabel.Text("Sending: "+txTextBox.Text());
-    }
-
-    public void htmlDisplay_StringChange(final String theString) {
-        rxTextBox.Text("got: "+theString);
     }
 
     public static void dbg (String debugMsg) {

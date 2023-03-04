@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="">
+<head>
+<meta charset="utf-8">
+<title></title>
+<style>
+label {
+  font-size: 20px;
+  font-family: Arial;
+  font-weight: bold;
+  color: white;
+}
+h1 {
+color: white;
+}
+button, input {
+  width: 90%;
+  height: 50px;
+  font-size: 20px;
+  font-family: Fixed;
+  margin-left: auto;
+  margin-right: auto;
+}
+body {
+  background-color: #234276;
+}
+button {
+  font-family: Arial;
+}
+#dbg {
+  font-size: 10px;
+}
+</style>
+<script >
+    let tickerInterval=500;
+    let lastMessage="";
+    let currentMessage="";
+    let first=true;
+    var busy=false;
+    
+    function sendToAndroid() {
+      clearInterval(watchTimer);
+      document.removeEventListener('webviewqueue_demo', readFromAndroid);
+      var msg=document.getElementById('tx').value;
+      window.AppInventor.fachtnaSetWebViewString(msg);
+      document.addEventListener('webviewqueue_demo', readFromAndroid);
+      watchTimer=setInterval(watcher,tickerInterval);
+    }
+    
+    function readFromAndroid(){
+      clearInterval(watchTimer);
+      document.removeEventListener('webviewqueue_demo', readFromAndroid);
+      var msg =window.AppInventor.getWebViewString();
+      document.getElementById('rx').value=msg;
+      first=true;
+      document.addEventListener('webviewqueue_demo', readFromAndroid);
+      watchTimer=setInterval(watcher,tickerInterval);
+    }
+    
+    function dbg(str) {
+      document.getElementById('dbg').value=str;
+    }
+    function watcher() {
+      var now = new Date();
+      var ticks = now.getTime();
+      dbg(ticks);
+      if (first) {
+        window.AppInventor.getWebViewString();
+        window.AppInventor.getWebViewString();
+        first=false;
+      }
+      if (!busy) {
+        busy=true;
+        temp=window.AppInventor.getWebViewString();
+        if ((currentMessage != temp) ) {
+          lastMessage=currentMessage;
+          currentMessage=temp;
+          inbound=new CustomEvent("webviewqueue_demo");
+          document.dispatchEvent(inbound);
+        }
+        busy=false;
+      }
+    }
+    document.addEventListener('webviewqueue_demo', readFromAndroid);
+    watchTimer=setInterval(watcher,tickerInterval);
+</script>
+</head>
+<body>
+    <h1>HTML</h1>
+    <label for="rx">Receive</label><br>
+    <input type="text" name="rx" id="rx"><br><br>
+    <label for="tx">Send</label><br>
+    <input type="text" name="tx" id="tx" value="This is html"><br><br>
+    <button type="button" id="send" name="send" onclick="sendToAndroid()">Send</button><br><br>
+    <input type="text" name="dbg" id="dbg" readonly value="---"><br>
+</body>
+</html>
