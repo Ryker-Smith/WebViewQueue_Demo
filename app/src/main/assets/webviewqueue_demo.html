@@ -38,57 +38,44 @@ width: 100%;
 </style>
 <script >
     let wvq_tickerInterval=500;
-    let wvq_lastMessage="";
-    let wvq_currentMessage="";
-    let wvq_first=true;
     var wvq_busy=false;
+    let wvq_last_sequence="-1";
     
-    function wvq_sendToAndroid() {
-      clearInterval(watchTimer);
-      document.removeEventListener('wvq', wvq_readFromAndroid);
-      var msg=document.getElementById('tx').value;
-      window.AppInventor.fachtnaSetWebViewString(msg);
-      document.addEventListener('wvq', wvq_readFromAndroid);
-      watchTimer=setInterval(wvq_watcher,wvq_tickerInterval);
-    }
-    
-    function wvq_readFromAndroid(){
-      clearInterval(watchTimer);
-      document.removeEventListener('wvq', wvq_readFromAndroid);
-      var msg =window.AppInventor.getWebViewString();
-      document.getElementById('rx').value=msg;
-      // wvq_first=true;
-      document.addEventListener('wvq', wvq_readFromAndroid);
-      watchTimer=setInterval(wvq_watcher,wvq_tickerInterval);
-    }
     function dbg(str) {
       document.getElementById('dbg').value=str;
     }
-    function wvq_watcher() {
-      document.getElementById('fleg').style.BackgroundColor="red";
-      var now = new Date();
-      var ticks = now.getTime();
-      dbg(ticks);
-      if (wvq_first) {
-        window.AppInventor.getWebViewString();
-        window.AppInventor.getWebViewString();
-        wvq_first=false;
-      }
-      if (!wvq_busy) {
-        wvq_busy=true;
-        temp=window.AppInventor.getWebViewString();
-        if ((wvq_currentMessage != temp) ) {
-          wvq_lastMessage=wvq_currentMessage;
-          wvq_currentMessage=temp;
-          inbound=new CustomEvent("wvq");
-          document.dispatchEvent(inbound);
-        }
-        wvq_busy=false;
-      }
-      // document.getElementById('fleg').style.BackgroundColor="#234276";
-    }
-    document.addEventListener('wvq', wvq_readFromAndroid);
-    watchTimer=setInterval(wvq_watcher, wvq_tickerInterval);
+    
+   
+function wvq_sendToAndroid() {
+  window.AppInventor.toAndroid(
+    window.AppInventor.asIfJSON(
+      ["content",  document.getElementById('tx').value]
+  ));
+}
+    
+function wvq_watcher() {
+  if (wvq_busy) {
+    console.log("wvq is busy");
+    return
+  }
+  let msg={};
+  try {
+    msg=JSON.parse(window.AppInventor.fromAndroid());
+    // console.log("Raw msg: "+window.AppInventor.fromAndroid());
+  }
+  catch (e) {
+    console.log("Err\n",e);
+  }
+  if(msg.sequence != wvq_last_sequence) {
+    wvq_busy=true;
+    wvq_last_sequence=msg.sequence;
+    document.getElementById('rx').value= msg.content;
+  }
+  wvq_busy=false;
+}
+    
+  watchTimer=setInterval(wvq_watcher, wvq_tickerInterval);
+    
 </script>
 </head>
 <body>

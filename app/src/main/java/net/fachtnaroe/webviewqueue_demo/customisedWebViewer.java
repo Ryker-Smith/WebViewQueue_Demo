@@ -32,25 +32,30 @@ import com.google.appinventor.components.runtime.util.SdkLevel;
 @UsesPermissions(
         permissionNames = "android.permission.INTERNET"
 )
-public final class fachtnaWebViewer extends AndroidViewComponent  {
+public final class customisedWebViewer extends AndroidViewComponent  {
     private final WebView webview;
     private String homeUrl;
     private boolean followLinks = true;
     private boolean prompt = true;
     private boolean ignoreSslErrors = false;
-    fachtnaWebViewer.WebViewInterface wvInterface;
+    // using unsigned so that overflow will be a wrap-around, and long to reduce the frequency of either
+    //private static unsigned long sequence_counter=1;
+    // why was I able to use 'unsigned' in one compilation, but cannot now????????
+    // both inbound and outbound messages use the same counter variable
+    private static long sequence_counter=1;
+    customisedWebViewer.WebViewInterface wvInterface;
 
-    public fachtnaWebViewer(ComponentContainer container) {
+    public customisedWebViewer(ComponentContainer container) {
         super(container);
         this.webview = new WebView(container.$context());
         this.resetWebViewClient();
         this.webview.getSettings().setJavaScriptEnabled(true);
         this.webview.setFocusable(true);
-        this.wvInterface = new fachtnaWebViewer.WebViewInterface(this.webview.getContext());
+        this.wvInterface = new customisedWebViewer.WebViewInterface(this.webview.getContext());
         this.webview.addJavascriptInterface(this.wvInterface, "AppInventor");
         this.webview.getSettings().setBuiltInZoomControls(true);
         if (SdkLevel.getLevel() >= 5) {
-//            EclairUtil.setupWebViewGeoLoc((com.google.appinventor.components.runtime.WebViewer)this, this.webview, container.$context());
+            // EclairUtil.setupWebViewGeoLoc((com.google.appinventor.components.runtime.WebViewer)this, this.webview, container.$context());
         }
 
         container.$add(this);
@@ -72,6 +77,24 @@ public final class fachtnaWebViewer extends AndroidViewComponent  {
         this.Height(-2);
     }
 
+    public long readOnly_Sequence(){
+        // the readOnly_Sequence value may not be current
+        return sequence_counter;
+    }
+    public long getSequence(){
+        /* simultanbeously return and increment the sequence counter
+        the variable is unsigned long so overflow will be automatically
+         wrapped-around at overflow. Plus, the variable is type long,
+         which has an upper limit of a gazillion quinty billion, approx.
+
+         UNSIGNED not working in Java.... aaargh
+         */
+        if (sequence_counter < 0) {
+            sequence_counter=0;
+        }
+        return sequence_counter++;
+    }
+
     @SimpleProperty(
             description = "Gets the WebView's String, which is viewable through Javascript in the WebView as the window.AppInventor object",
             category = PropertyCategory.BEHAVIOR
@@ -79,12 +102,21 @@ public final class fachtnaWebViewer extends AndroidViewComponent  {
     public String WebViewString() {
         return this.wvInterface.getWebViewString();
     }
-
+    public String get_thingUpdates(){
+        return this.wvInterface.thingUpdatesAndCommands;
+    }
+    // for the Android use to/from Game
+    public String fromGame() {
+        return this.wvInterface.wvq_fromGame;
+    }
+    public void toGame(String newString) {
+        this.wvInterface.wvq_toGame=newString;
+    }
     @SimpleProperty(
             category = PropertyCategory.BEHAVIOR
     )
     public void WebViewString(String newString) {
-        this.wvInterface.fachtnaSetWebViewString(newString);
+        this.wvInterface.setWebViewString(newString);
     }
 
     public View getView() {
@@ -96,7 +128,6 @@ public final class fachtnaWebViewer extends AndroidViewComponent  {
         if (width == -1) {
             width = -2;
         }
-
         super.Width(width);
     }
 
@@ -110,7 +141,7 @@ public final class fachtnaWebViewer extends AndroidViewComponent  {
     }
 
     @SimpleProperty(
-            description = "URL of the page the fachtnaWebViewer should initially open to.  Setting this will load the page.",
+            description = "URL of the page the modifiedWebViewer should initially open to.  Setting this will load the page.",
             category = PropertyCategory.BEHAVIOR
     )
     public String HomeUrl() {
@@ -145,7 +176,7 @@ public final class fachtnaWebViewer extends AndroidViewComponent  {
     }
 
     @SimpleProperty(
-            description = "Determines whether to follow links when they are tapped in the fachtnaWebViewer.  If you follow links, you can use GoBack and GoForward to navigate the browser history. ",
+            description = "Determines whether to follow links when they are tapped in the modifiedWebViewer.  If you follow links, you can use GoBack and GoForward to navigate the browser history. ",
             category = PropertyCategory.BEHAVIOR
     )
     public boolean FollowLinks() {
@@ -194,7 +225,6 @@ public final class fachtnaWebViewer extends AndroidViewComponent  {
         if (this.webview.canGoBack()) {
             this.webview.goBack();
         }
-
     }
 
     @SimpleFunction(
@@ -204,18 +234,17 @@ public final class fachtnaWebViewer extends AndroidViewComponent  {
         if (this.webview.canGoForward()) {
             this.webview.goForward();
         }
-
     }
 
     @SimpleFunction(
-            description = "Returns true if the fachtnaWebViewer can go forward in the history list."
+            description = "Returns true if the modifiedWebViewer can go forward in the history list."
     )
     public boolean CanGoForward() {
         return this.webview.canGoForward();
     }
 
     @SimpleFunction(
-            description = "Returns true if the fachtnaWebViewer can go back in the history list."
+            description = "Returns true if the modifiedWebViewer can go back in the history list."
     )
     public boolean CanGoBack() {
         return this.webview.canGoBack();
@@ -264,16 +293,14 @@ public final class fachtnaWebViewer extends AndroidViewComponent  {
         if (SdkLevel.getLevel() >= 5) {
             EclairUtil.clearWebViewGeoLoc();
         }
-
     }
 
     private void resetWebViewClient() {
         if (SdkLevel.getLevel() >= 8) {
             this.webview.setWebViewClient(FroyoUtil.getWebViewClient(this.ignoreSslErrors, this.followLinks, this.container.$form(), this));
         } else {
-            this.webview.setWebViewClient(new fachtnaWebViewer.WebViewerClient());
+            this.webview.setWebViewClient(new customisedWebViewer.WebViewerClient());
         }
-
     }
 
     @SimpleFunction(
@@ -286,10 +313,16 @@ public final class fachtnaWebViewer extends AndroidViewComponent  {
     public class WebViewInterface {
         Context mContext;
         String webViewString;
+        String thingUpdatesAndCommands;
+        String wvq_toGame;
+        String wvq_fromGame;
 
         WebViewInterface(Context c) {
             this.mContext = c;
-            this.webViewString = " ";
+            this.webViewString = "0";
+            this.wvq_fromGame="0";
+            this.wvq_toGame="0";
+            this.thingUpdatesAndCommands="0";
         }
 
         @JavascriptInterface
@@ -297,39 +330,74 @@ public final class fachtnaWebViewer extends AndroidViewComponent  {
             return this.webViewString;
         }
 
-        /* This next line added 20190215 by Fachtna; the omission of this
-            was preventing the JavaScript in the web-page
-            from communicating with the Java of the host App.
-            PROBLEM:    JavascriptInterface not working (@JavascriptInterface omitted)
-            SOLUTION:   Add @JavascriptInterface before each function to be accessible
-        */
         @JavascriptInterface
-        public void fachtnaSetWebViewString(String newString) {
+        public void setWebViewString(String newString) {
             this.webViewString = newString;
-            /* This next line added 20190216 by Fachtna; no event was being raised as documentation
-                indicated would be raised; this function-call is part of bringing code inline with
-                embedded documentation.
-            */
-            fachtnaRaiseEvent("fachtnaWebViewStringChange");
+            raiseEvent("WebViewStringChange");
         }
+        // experiments from here
+        @JavascriptInterface
+        public String get_Commands() {
+            return this.thingUpdatesAndCommands;
+        }
+
+        @JavascriptInterface
+        public void send_ThingUpdates(String newString) {
+            this.thingUpdatesAndCommands = newString;
+            raiseEvent("thingUpdate");
+        }
+        // for the web page use to/from Android
+        @JavascriptInterface
+        public String fromAndroid() {
+            // the game (browser) sees 'fromAndroid' and the Android sees 'toGame'
+            return this.wvq_toGame;
+        }
+        @JavascriptInterface
+        public void fromAndroid_clear() {
+            this.wvq_toGame="";
+            //raiseEvent("wvq_fromGame_clear");
+        }
+        @JavascriptInterface
+        public void toAndroid(String newString) {
+            this.wvq_fromGame = newString;
+            raiseEvent("wvq_fromGame");
+        }
+        @JavascriptInterface
+        public String asIfJSON(String[] parts){
+
+            return as_JSON(parts);
+        }
+
     }
-    /*
-        This fachtnaRaiseEvent routine added 20190215 by Fachtna;
-        PROBLEM: no event was being raised as documentation indicated would be raised;
-        SOLUTION: raise an event using the provided EventDispatcher
-     */
+
     @SimpleEvent
-    public void fachtnaRaiseEvent(String customMessage) {
+    public void raiseEvent(String customMessage) {
         EventDispatcher.dispatchEvent(this, customMessage, new Object[]{});
     }
-    // End Fachtna-added bits
 
     private class WebViewerClient extends WebViewClient {
         private WebViewerClient() {
         }
 
         public boolean shouldOverrideUrlLoading(WebView view, String url) {
-            return !fachtnaWebViewer.this.followLinks;
+            return !customisedWebViewer.this.followLinks;
         }
+    }
+
+    public String as_JSON(String[] parts){
+        String result="";
+        if ((parts.length % 2) != 0) {
+            return "Error: uneven parameter list";
+        }
+
+        result=result + "\"sequence\" : \"" + String.valueOf(this.getSequence()) +"\",";
+        for (int i=0; i < (int) parts.length; i+=2) {
+            result= result + " \"" + parts[i] + "\" : \"" + parts[i+1]+"\"";
+            if ((i+2) != parts.length) {
+                result = result + ", ";
+            }
+        }
+        result = "{" + result + "}";
+        return result;
     }
 }

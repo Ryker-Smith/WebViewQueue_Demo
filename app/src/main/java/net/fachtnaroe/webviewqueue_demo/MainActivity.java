@@ -9,8 +9,10 @@ import com.google.appinventor.components.runtime.HandlesEventDispatching;
 import com.google.appinventor.components.runtime.HorizontalArrangement;
 import com.google.appinventor.components.runtime.Label;
 import com.google.appinventor.components.runtime.TextBox;
-import com.google.appinventor.components.runtime.WebViewer;
 import com.google.appinventor.components.runtime.VerticalArrangement;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 public class MainActivity extends Form implements HandlesEventDispatching {
 
@@ -20,10 +22,10 @@ public class MainActivity extends Form implements HandlesEventDispatching {
     TextBox rxTextBox, txTextBox, dbgLabel;
     HorizontalArrangement main;
     VerticalArrangement androidDisplay, outer;
-    fachtnaWebViewer htmlDisplay;
-    WebViewQueue wvq;
+    customisedWebViewer htmlDisplay;
     static boolean debugging_onoff=true;
     Clock clicketty;
+    String one="", two="";
 
     protected void $define() {
         this.Sizing("Responsive");
@@ -45,7 +47,7 @@ public class MainActivity extends Form implements HandlesEventDispatching {
         main.Height(Component.LENGTH_FILL_PARENT);
         main.WidthPercent(100);
 
-        htmlDisplay=new fachtnaWebViewer(main);
+        htmlDisplay=new customisedWebViewer(main);
         htmlDisplay.WidthPercent(50);
         htmlDisplay.Height(Component.LENGTH_FILL_PARENT);
         htmlDisplay.HomeUrl("file:///android_asset/webviewqueue_demo.html");
@@ -100,46 +102,62 @@ public class MainActivity extends Form implements HandlesEventDispatching {
         dbgLabel.Height(50);
         dbgLabel.Text("---");
 
-        wvq=new WebViewQueue(this, htmlDisplay);
-        qSizeLbl.Text("Max  Q: "+wvq.queue_max.toString());
-        qNowLbl.Text ("Size Q: "+wvq.qSize());
         clicketty=new Clock(this);
-        clicketty.TimerInterval(1000);
+        clicketty.TimerInterval(500);
         clicketty.TimerEnabled(true);
+        qSizeLbl.Text("Sequence counter");
 
-        dbg(" Starting register["+this.toString()+"]");
         EventDispatcher.registerEventForDelegation(this, this.toString(), "Click");
         EventDispatcher.registerEventForDelegation(this, this.toString(), "Timer");
-        EventDispatcher.registerEventForDelegation(this, this.toString(), "fachtnaWebViewStringChange");
+        EventDispatcher.registerEventForDelegation(this, this.toString(), "wvq_fromGame");
     }
 
     public boolean dispatchEvent(Component component, String componentName, String eventName, Object[] params) {
 
-        //dbg("dispatchEvent: [" + formName + "] [" +component.toString() + "] [" + componentName + "] " + eventName);
-
+//        dbg("dispatchEvent: [" + formName + "] [" +component.toString() + "] [" + componentName + "] " + eventName);
         if (eventName.equals("Click")) {
             if (component.equals(sendButton)) {
-                wvq.toGame(txTextBox.Text());
-                dbg("Sending: "+txTextBox.Text() );
+                htmlDisplay.toGame(
+                        htmlDisplay.as_JSON(new String[] {"content", txTextBox.Text()})
+                );
+                qSizeLbl.Text("Seq: "+
+                        // the readOnly_Sequence value may not be current
+                        Long.toString(htmlDisplay.readOnly_Sequence())
+                 );
                 return true;
             }
         }
         else if(component.equals("Timer")){
-            qNowLbl.Text ("Size Q: "+wvq.qSize());
-        }
-        else if( eventName.equals("fachtnaWebViewStringChange") ) {
-            dbg("   component   ["+component.toString()+"]");
-            if (component.equals(htmlDisplay)) {
-                String r=wvq.fromGame();
-                rxTextBox.Text(r);
-            }
             return true;
+        }
+        else if( eventName.equals("wvq_fromGame") ) {
+            if (component.equals(htmlDisplay)) {
+                /*  The runOnUiThread error was being raised:
+                    "Only the original thread that created a view hierarchy can touch its views"
+                    by the updating of the main screen when this block executed
+                    https://stackoverflow.com/questions/18656813/android-only-the-original-thread-that-created-a-view-hierarchy-can-touch-its-vi
+
+                 */
+                MainActivity.getActiveForm().runOnUiThread(new Runnable(){
+                    public void run(){
+                        try {
+                            String r=htmlDisplay.fromGame();
+                            JSONObject parser = new JSONObject(r);
+                            qSizeLbl.Text("Seq: "+parser.getString("sequence"));
+                            rxTextBox.Text(parser.getString("content"));
+                        }
+                        catch (JSONException e){
+                            dbg(e.toString());
+                        }
+                    }
+                });
+                return true;
+            }
         }
         return false;
     }
 
     public static void dbg (String debugMsg) {
-
         if (debugging_onoff) {
             System.err.print( "~~~> " + debugMsg + " <~~~\n");
         }
