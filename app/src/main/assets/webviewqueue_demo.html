@@ -47,8 +47,8 @@ width: 100%;
     
    
 function wvq_sendToAndroid() {
-  window.AppInventor.toAndroid(
-    window.AppInventor.asIfJSON(
+  window.customSharedVariable.toAndroid(
+    window.customSharedVariable.asIfJSON(
       ["content",  document.getElementById('tx').value]
   ));
 }
@@ -60,8 +60,7 @@ function wvq_watcher() {
   }
   let msg={};
   try {
-    msg=JSON.parse(window.AppInventor.fromAndroid());
-    // console.log("Raw msg: "+window.AppInventor.fromAndroid());
+    msg=JSON.parse(window.customSharedVariable.fromAndroid());
   }
   catch (e) {
     console.log("Err\n",e);

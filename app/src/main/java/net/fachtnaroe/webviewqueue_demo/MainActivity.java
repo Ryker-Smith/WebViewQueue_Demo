@@ -25,7 +25,6 @@ public class MainActivity extends Form implements HandlesEventDispatching {
     customisedWebViewer htmlDisplay;
     static boolean debugging_onoff=true;
     Clock clicketty;
-    String one="", two="";
 
     protected void $define() {
         this.Sizing("Responsive");

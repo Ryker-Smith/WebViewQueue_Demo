@@ -52,7 +52,7 @@ public final class customisedWebViewer extends AndroidViewComponent  {
         this.webview.getSettings().setJavaScriptEnabled(true);
         this.webview.setFocusable(true);
         this.wvInterface = new customisedWebViewer.WebViewInterface(this.webview.getContext());
-        this.webview.addJavascriptInterface(this.wvInterface, "AppInventor");
+        this.webview.addJavascriptInterface(this.wvInterface, "customSharedVariable");
         this.webview.getSettings().setBuiltInZoomControls(true);
         if (SdkLevel.getLevel() >= 5) {
             // EclairUtil.setupWebViewGeoLoc((com.google.appinventor.components.runtime.WebViewer)this, this.webview, container.$context());
